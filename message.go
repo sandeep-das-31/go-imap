@@ -181,6 +181,8 @@ type Message struct {
 	// because some bad IMAP clients (looking at you, Outlook!) refuse responses
 	// containing items in a different order.
 	itemsOrder []FetchItem
+	// Each email has its own thread id in Gmail, emails with same thread id is a thread/conversation
+	ThreadID string
 }
 
 // Create a new empty message that will contain the specified items.
@@ -259,6 +261,8 @@ func (m *Message) Parse(fields []interface{}) error {
 				m.Size, _ = ParseNumber(f)
 			case FetchUid:
 				m.Uid, _ = ParseNumber(f)
+			case GmailThreadID:
+				m.ThreadID, _ = f.(string)
 			default:
 				// Likely to be a section of the body
 				// First check that the section name is correct

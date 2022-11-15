@@ -45,6 +45,7 @@ const (
 	FetchRFC822Size    FetchItem = "RFC822.SIZE"
 	FetchRFC822Text    FetchItem = "RFC822.TEXT"
 	FetchUid           FetchItem = "UID"
+	GmailThreadID      FetchItem = "X-GM-THRID"
 )
 
 // Expand expands the item if it's a macro.
