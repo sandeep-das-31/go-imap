@@ -96,7 +96,7 @@ func (c *Client) Authenticate(auth sasl.Client) error {
 	if err != nil {
 		return err
 	}
-	log.Println("go-imap started", mech, " ir ", ir, " err ", err)
+	log.Println("go-imap started", mech, " err ", err)
 
 	cmd := &commands.Authenticate{
 		Mechanism: mech,
