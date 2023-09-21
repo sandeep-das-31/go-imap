@@ -327,7 +327,7 @@ func (c *Client) Idle(stop <-chan struct{}, opts *IdleOptions) error {
 			return c.idle(stop)
 		}
 	}
-	log.Println("running idle client - setup logout time")
+	log.Println("running idle client - setup logout time ", logoutTimeout)
 	t := time.NewTicker(logoutTimeout)
 	defer t.Stop()
 	log.Println("running idle client - ticker started")
