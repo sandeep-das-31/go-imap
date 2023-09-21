@@ -36,7 +36,7 @@ func (c *Client) Capability() (map[string]bool, error) {
 // Support checks if cap is a capability supported by the server. If the server
 // hasn't sent its capabilities yet, Support requests them.
 func (c *Client) Support(cap string) (bool, error) {
-	log.Println("running support idle client ")
+	log.Println("running support idle client ", cap)
 	c.locker.Lock()
 	ok := c.caps != nil
 	c.locker.Unlock()
@@ -51,7 +51,7 @@ func (c *Client) Support(cap string) (bool, error) {
 	c.locker.Lock()
 	supported := c.caps[cap]
 	c.locker.Unlock()
-	log.Println("returning support idle client ")
+	log.Println("returning support idle client ", cap, " supported ", supported)
 	return supported, nil
 }
 
