@@ -3,6 +3,7 @@ package client
 import (
 	"crypto/tls"
 	"errors"
+	"log"
 	"net"
 
 	"github.com/emersion/go-imap"
@@ -85,14 +86,17 @@ func (c *Client) SupportAuth(mech string) (bool, error) {
 // server supports the requested authentication mechanism, it performs an
 // authentication protocol exchange to authenticate and identify the client.
 func (c *Client) Authenticate(auth sasl.Client) error {
+	log.Println("go-imap running Authenticate ", auth)
 	if c.State() != imap.NotAuthenticatedState {
 		return ErrAlreadyLoggedIn
 	}
+	log.Println("go-imap checked state ", c.State())
 
 	mech, ir, err := auth.Start()
 	if err != nil {
 		return err
 	}
+	log.Println("go-imap started", mech, " ir ", ir, " err ", err)
 
 	cmd := &commands.Authenticate{
 		Mechanism: mech,
@@ -102,6 +106,7 @@ func (c *Client) Authenticate(auth sasl.Client) error {
 	if err != nil {
 		return err
 	}
+	log.Println("go-imap irOK ", irOk, " err ", err)
 	if irOk {
 		cmd.InitialResponse = ir
 	}

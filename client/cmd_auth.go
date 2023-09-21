@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/emersion/go-imap"
@@ -309,12 +310,15 @@ type IdleOptions struct {
 //
 // If the server doesn't support IDLE, go-imap falls back to polling.
 func (c *Client) Idle(stop <-chan struct{}, opts *IdleOptions) error {
+	currentTime := time.Now()
+	log.Println("running idle client ", currentTime)
 	if ok, err := c.Support("IDLE"); err != nil {
 		return err
 	} else if !ok {
+		log.Println("running idleFallback idle client ")
 		return c.idleFallback(stop, opts)
 	}
-
+	log.Println("running idle client - not support, not idleFallback")
 	logoutTimeout := 25 * time.Minute
 	if opts != nil {
 		if opts.LogoutTimeout > 0 {
@@ -323,14 +327,15 @@ func (c *Client) Idle(stop <-chan struct{}, opts *IdleOptions) error {
 			return c.idle(stop)
 		}
 	}
-
+	log.Println("running idle client - setup logout time")
 	t := time.NewTicker(logoutTimeout)
 	defer t.Stop()
-
+	log.Println("running idle client - ticker started")
 	for {
 		stopOrRestart := make(chan struct{})
 		done := make(chan error, 1)
 		go func() {
+			log.Println("running idle client - started idle server")
 			done <- c.idle(stopOrRestart)
 		}()
 
@@ -338,14 +343,17 @@ func (c *Client) Idle(stop <-chan struct{}, opts *IdleOptions) error {
 		case <-t.C:
 			close(stopOrRestart)
 			if err := <-done; err != nil {
+				log.Println("running idle client 346 - closed idle server", err, time.Since(currentTime))
 				return err
 			}
 		case <-stop:
 			close(stopOrRestart)
+			log.Println("running idle client 351 - closed idle server", time.Since(currentTime))
 			return <-done
 		case err := <-done:
 			close(stopOrRestart)
 			if err != nil {
+				log.Println("running idle client 356 - closed idle server", err, time.Since(currentTime))
 				return err
 			}
 		}
@@ -353,6 +361,8 @@ func (c *Client) Idle(stop <-chan struct{}, opts *IdleOptions) error {
 }
 
 func (c *Client) idleFallback(stop <-chan struct{}, opts *IdleOptions) error {
+	currentTime := time.Now()
+	log.Println("inside idleFallback client ", currentTime)
 	pollInterval := time.Minute
 	if opts != nil {
 		if opts.PollInterval > 0 {
@@ -361,7 +371,7 @@ func (c *Client) idleFallback(stop <-chan struct{}, opts *IdleOptions) error {
 			return ErrExtensionUnsupported
 		}
 	}
-
+	log.Println("pollaINterval idleFallback client ", pollInterval)
 	t := time.NewTicker(pollInterval)
 	defer t.Stop()
 
@@ -369,11 +379,14 @@ func (c *Client) idleFallback(stop <-chan struct{}, opts *IdleOptions) error {
 		select {
 		case <-t.C:
 			if err := c.Noop(); err != nil {
+				log.Println("ticker idleFallback client ", time.Since(currentTime))
 				return err
 			}
 		case <-stop:
+			log.Println("stop idleFallback client ", time.Since(currentTime))
 			return nil
 		case <-c.LoggedOut():
+			log.Println("loggedout idleFallback client ", time.Since(currentTime))
 			return errors.New("disconnected while idling")
 		}
 	}
