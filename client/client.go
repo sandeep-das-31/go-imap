@@ -184,6 +184,7 @@ type handleResult struct {
 }
 
 func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.StatusResp, error) {
+	log.Println("go-imap running  execute in client.go")
 	cmd := cmdr.Command()
 	cmd.Tag = generateTag()
 
@@ -191,7 +192,7 @@ func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.Status
 	if replier, ok := h.(responses.Replier); ok {
 		replies = replier.Replies()
 	}
-
+	log.Println("go-imap execute filled replies")
 	if c.Timeout > 0 {
 		err := c.conn.SetDeadline(time.Now().Add(c.Timeout))
 		if err != nil {
@@ -204,7 +205,7 @@ func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.Status
 			return nil, err
 		}
 	}
-
+	log.Println("go-imap execute setting deadline")
 	// Check if we are upgrading.
 	upgrading := c.upgrading
 
@@ -213,6 +214,7 @@ func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.Status
 	// sometimes the response was received before the setup of this handler)
 	doneHandle := make(chan handleResult, 1)
 	unregister := make(chan struct{})
+	log.Println("go-imap execute starting register handler")
 	c.registerHandler(responses.HandlerFunc(func(resp imap.Resp) error {
 		select {
 		case <-unregister:
@@ -250,7 +252,7 @@ func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.Status
 		}
 		return responses.ErrUnhandled
 	}))
-
+	log.Println("go-imap execute done register handler")
 	// Send the command to the server
 	if err := cmd.WriteTo(c.conn.Writer); err != nil {
 		// Error while sending the command
@@ -269,6 +271,7 @@ func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.Status
 
 		return nil, err
 	}
+	log.Println("go-imap execute done write to")
 	// Flush writer if we are upgrading
 	if upgrading {
 		if err := c.conn.Writer.Flush(); err != nil {
@@ -277,16 +280,19 @@ func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.Status
 			return nil, err
 		}
 	}
+	log.Println("go-imap execute done upgrading, starting infinite for loop")
 
 	for {
 		select {
 		case reply := <-replies:
+			log.Println("go-imap execute case replies")
 			// Response handler needs to send a reply (Used for AUTHENTICATE)
 			if err := c.writeReply(reply); err != nil {
 				close(unregister)
 				return nil, err
 			}
 		case <-c.loggedOut:
+			log.Println("go-imap execute case logout")
 			// If the connection is closed (such as from an I/O error), ensure we
 			// realize this and don't block waiting on a response that will never
 			// come. loggedOut is a channel that closes when the reader goroutine
@@ -294,6 +300,7 @@ func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.Status
 			close(unregister)
 			return nil, errClosed
 		case result := <-doneHandle:
+			log.Println("go-imap execute case donehandle")
 			return result.status, result.err
 		}
 	}

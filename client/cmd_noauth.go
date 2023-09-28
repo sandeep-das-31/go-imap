@@ -106,8 +106,13 @@ func (c *Client) Authenticate(auth sasl.Client) error {
 	if err != nil {
 		return err
 	}
-	log.Println("go-imap irOK ", irOk, " err ", err)
+	oAuthBearerOk, err := c.Support("OAUTHBEARER")
+	if err != nil {
+		log.Println("error checking oAuth bearer")
+	}
+	log.Println("go-imap irOK ", irOk, " err ", err, " OAUTHBEARER", oAuthBearerOk)
 	if irOk {
+		log.Println("irok true for cmd.InitialResponse")
 		cmd.InitialResponse = ir
 	}
 
@@ -116,15 +121,19 @@ func (c *Client) Authenticate(auth sasl.Client) error {
 		InitialResponse: ir,
 		RepliesCh:       make(chan []byte, 10),
 	}
+	log.Println("go-imap creating respose object  ")
 	if irOk {
+		log.Println("irok true for res.InitialResponse")
 		res.InitialResponse = nil
 	}
-
+	log.Println("go-imap running  execute in noAuth  ")
 	status, err := c.execute(cmd, res)
 	if err != nil {
 		return err
 	}
+	log.Println("go-imap completed  execute in noAuth ", status.Err().Error(), "complete status ", status)
 	if err = status.Err(); err != nil {
+		log.Println("go-imap error in the execute of oAuth")
 		return err
 	}
 
@@ -136,7 +145,7 @@ func (c *Client) Authenticate(auth sasl.Client) error {
 	if status.Code == "CAPABILITY" {
 		c.gotStatusCaps(status.Arguments)
 	}
-
+	log.Println("noauth authenticate return nil ", status.Arguments)
 	return nil
 }
 
