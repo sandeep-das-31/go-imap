@@ -131,7 +131,10 @@ func (c *Client) Authenticate(auth sasl.Client) error {
 	if err != nil {
 		return err
 	}
-	log.Println("go-imap completed  execute in noAuth ", status.Err().Error(), "complete status ", status)
+	log.Println("go-imap completed  execute in noAuth ", status.Err().Error())
+	if status != nil {
+		log.Println("go-imap printing in noAuth ", status)
+	}
 	if err = status.Err(); err != nil {
 		log.Println("go-imap error in the execute of oAuth")
 		return err
