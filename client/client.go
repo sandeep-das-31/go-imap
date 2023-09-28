@@ -218,38 +218,48 @@ func (c *Client) execute(cmdr imap.Commander, h responses.Handler) (*imap.Status
 	c.registerHandler(responses.HandlerFunc(func(resp imap.Resp) error {
 		select {
 		case <-unregister:
+			log.Println("go-imap execute unregistered handler")
 			// If an error occured while sending the command, abort
 			return errUnregisterHandler
 		default:
 		}
-
+		log.Println("go-imap execute StatusResp")
 		if s, ok := resp.(*imap.StatusResp); ok && s.Tag == cmd.Tag {
 			// This is the command's status response, we're done
 			doneHandle <- handleResult{s, nil}
+			log.Println("go-imap execute populating done handle", s.Tag, " cmd.tag ", cmd.Tag)
 			// Special handling of connection upgrading.
 			if upgrading {
 				c.upgrading = false
+				log.Println("go-imap execute populating c.Upgrading")
 				// Wait for upgrade to finish.
 				c.conn.Wait()
 			}
 			// Cancel any pending literal write
 			select {
 			case c.continues <- false:
+				log.Println("go-imap executec.continues is false")
 			default:
 			}
+			log.Println("go-imap execute return unregistered handler")
 			return errUnregisterHandler
 		}
 
 		if h != nil {
+			log.Println("go-imap execute h!= nil")
 			// Pass the response to the response handler
 			if err := h.Handle(resp); err != nil && err != responses.ErrUnhandled {
 				// If the response handler returns an error, abort
+				log.Println("go-imap execute populating done handle in h ", err)
 				doneHandle <- handleResult{nil, err}
+				log.Println("go-imap execute return unregistered handler in h ", err)
 				return errUnregisterHandler
 			} else {
+				log.Println("go-imap execute return error handler in h ", err)
 				return err
 			}
 		}
+		log.Println("go-imap execute return  responses error handler in h ", responses.ErrUnhandled.Error())
 		return responses.ErrUnhandled
 	}))
 	log.Println("go-imap execute done register handler")
